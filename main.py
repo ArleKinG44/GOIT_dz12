@@ -100,8 +100,6 @@ class AddressBook(UserDict):
                 return "ValueError: The value you provided is not valid."
             except TypeError:
                 return "TypeError: The function you called is missing required arguments."
-            except FileNotFoundError:
-                return "FileNotFoundError: File with this name was not found."
         return inner 
 
     @input_error

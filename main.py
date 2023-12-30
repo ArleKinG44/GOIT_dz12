@@ -185,35 +185,43 @@ class AddressBook(UserDict):
         else:
             return "Give me a correct command please", None
 
-    def main(self):
-        self.ACTIONS = {
-            'add': self.add_record_str,
-            'delete': self.delete,
-            'edit_phone': self.edit_phone,
-            'find': self.find,
-            'show_all': self.start_iterator,
-            'next': self.next_page,
-            'search': self.search,
-            'save': self.save_to_file,
-            'load': self.load_from_file,
-            'close': self.good_bye,
-            'exit': self.good_bye,
-            '.': self.good_bye
-        }
-        while True:
-            data = input()
-            func, args = self.choice_action(data)
-            if isinstance(func, str):
-                print(func)
-                if func == "Good bye!":
-                    break
-            else:
-                result = func(args) if args else func()
-                print(result)
-                if result == "Good bye!":
-                    break
 
+def main(address_book):
+    ACTIONS = {
+        'add': address_book.add_record_str,
+        'delete': address_book.delete,
+        'edit_phone': address_book.edit_phone,
+        'find': address_book.find,
+        'show_all': address_book.start_iterator,
+        'next': address_book.next_page,
+        'search': address_book.search,
+        'save': address_book.save_to_file,
+        'load': address_book.load_from_file,
+        '.': address_book.good_bye}
+    while True:
+        data = input()
+        func, args = choice_action(data, ACTIONS)
+        if isinstance(func, str):
+            print(func)
+            if func == "Good bye!":
+                break
+        else:
+            result = func(args) if args else func()
+            print(result)
+            if result == "Good bye!":
+                break
+
+def choice_action(data, ACTIONS):
+    parts = data.split()
+    if not parts:
+        return "No command given", None
+    command = parts[0]
+    args = ' '.join(parts[1:])
+    if command in ACTIONS:
+        return ACTIONS[command], args
+    else:
+        return "Give me a correct command please", None
 
 if __name__ == "__main__":
     ab = AddressBook()
-    ab.main()
+    main(ab)

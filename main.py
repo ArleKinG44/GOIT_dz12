@@ -200,6 +200,7 @@ def main(address_book):
         'close': address_book.good_bye,
         'exit': address_book.good_bye,
         '.': address_book.good_bye}
+    
     while True:
         data = input()
         func, args = choice_action(data, ACTIONS)

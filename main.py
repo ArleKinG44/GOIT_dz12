@@ -1,6 +1,7 @@
 from collections import UserDict
 from datetime import datetime
 import pickle
+import os
 
 
 class Field:
@@ -84,6 +85,7 @@ class Record:
 
 
 class AddressBook(UserDict):
+    
     def __init__(self):
         super().__init__()
         self.current_page = 0
@@ -96,6 +98,10 @@ class AddressBook(UserDict):
                 return "KeyError: The key you provided does not exist."
             except ValueError:
                 return "ValueError: The value you provided is not valid."
+            except TypeError:
+                return "TypeError: The function you called is missing required arguments."
+            except FileNotFoundError:
+                return "FileNotFoundError: File with this name was not found."
         return inner 
 
     @input_error
@@ -104,7 +110,10 @@ class AddressBook(UserDict):
 
     @input_error
     def find(self, name):
-        return self.data.get(name)
+        if name in self.data:
+            return self.data.get(name)
+        else:
+            return f"Contact {name} not found"
 
     @input_error
     def delete(self, name):
@@ -123,13 +132,15 @@ class AddressBook(UserDict):
             self.current_page += self.page_size
 
     @input_error
-    def save_to_file(self, filename):
+    def save_to_file(self):
+        filename = 'address_book.pkl'
         with open(filename, 'wb') as file:
             pickle.dump(self.data, file)
         return f"Data saved to {filename}"
 
     @input_error
-    def load_from_file(self, filename):
+    def load_from_file(self):
+        filename = 'address_book.pkl'
         with open(filename, 'rb') as file:
             self.data = pickle.load(file)
         return f"Downloaded from {filename}"
@@ -162,6 +173,7 @@ class AddressBook(UserDict):
 
     @input_error
     def good_bye(self):
+        self.save_to_file()
         return "Good bye!"
 
     @input_error
@@ -187,6 +199,13 @@ class AddressBook(UserDict):
 
 
 def main(address_book):
+
+    filename = 'address_book.pkl'
+    if os.path.exists(filename):
+        ab.load_from_file()
+    else:
+        open(filename, 'a').close()
+
     ACTIONS = {
         'add': address_book.add_record_str,
         'delete': address_book.delete,
@@ -196,9 +215,8 @@ def main(address_book):
         'next': address_book.next_page,
         'search': address_book.search,
         'save': address_book.save_to_file,
-        'load': address_book.load_from_file,
-        'close': address_book.good_bye,
         'exit': address_book.good_bye,
+        'close': address_book.good_bye,
         '.': address_book.good_bye}
     
     while True:

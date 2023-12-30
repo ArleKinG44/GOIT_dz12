@@ -197,6 +197,8 @@ def main(address_book):
         'search': address_book.search,
         'save': address_book.save_to_file,
         'load': address_book.load_from_file,
+        'close': address_book.good_bye,
+        'exit': address_book.good_bye,
         '.': address_book.good_bye}
     while True:
         data = input()

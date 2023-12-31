@@ -100,6 +100,8 @@ class AddressBook(UserDict):
                 return "ValueError: The value you provided is not valid."
             except TypeError:
                 return "TypeError: The function you called is missing required arguments."
+            except FileNotFoundError:
+                return "FileNotFoundError: File with this name was not found."
         return inner 
 
     @input_error
@@ -195,6 +197,11 @@ class AddressBook(UserDict):
         else:
             return "Give me a correct command please", None
 
+    @input_error
+    def print_commands(ACTIONS):
+        print("Available commands:")
+        for command in ACTIONS.keys():
+            print(command)
 
 def main(address_book):
 
@@ -207,9 +214,9 @@ def main(address_book):
     ACTIONS = {
         'add': address_book.add_record_str,
         'delete': address_book.delete,
-        'edit_phone': address_book.edit_phone,
+        'renumber': address_book.edit_phone,
         'find': address_book.find,
-        'show_all': address_book.start_iterator,
+        'viewing': address_book.start_iterator,
         'next': address_book.next_page,
         'search': address_book.search,
         'save': address_book.save_to_file,
@@ -217,6 +224,8 @@ def main(address_book):
         'close': address_book.good_bye,
         '.': address_book.good_bye}
     
+    print_commands(ACTIONS)
+
     while True:
         data = input()
         func, args = choice_action(data, ACTIONS)
@@ -240,6 +249,11 @@ def choice_action(data, ACTIONS):
         return ACTIONS[command], args
     else:
         return "Give me a correct command please", None
+
+def print_commands(ACTIONS):
+        print("Available commands:")
+        for command in ACTIONS.keys():
+            print(command)
 
 if __name__ == "__main__":
     ab = AddressBook()

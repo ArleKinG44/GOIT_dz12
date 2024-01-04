@@ -72,21 +72,20 @@ class Record:
     def days_to_birthday(self):
         if not self.birthday:
             return None
-        next_birthday = datetime(datetime.now().year, self.birthday.month, self.birthday.day)
+        next_birthday = datetime(datetime.now().year, self.birthday.value.month,
+                                 self.birthday.value.day)
         if datetime.now() > next_birthday:
-            next_birthday = datetime(datetime.now().year + 1, self.birthday.month, self.birthday.day)
+            next_birthday = datetime(datetime.now().year + 1, self.birthday.value.month,
+                                     self.birthday.value.day)
         return (next_birthday - datetime.now()).days
-
-
 
     def __str__(self):
         return f"""Contact name: {self.name.value},
-                    phones: {'; '.join(str(p.value) for p in self.phones)}"""
-
+                    phones: {'; '.join(p.value for p in self.phones)}"""
 
 
 class AddressBook(UserDict):
-    
+
     def __init__(self):
         super().__init__()
         self.current_page = 0
@@ -106,76 +105,11 @@ class AddressBook(UserDict):
         return inner 
 
     @input_error
-    def add_record(self):
-        name = input("Enter a name: ")
-        if not name:
-            return "Error: Name cannot be empty"
-        if name in self.data:
-            return f"Contact {name} already exists"
-        phone_str = input("Enter a (10-digit) phone number: ")
-        phone = Phone(phone_str)
-        birthday_str = input("Enter your date of birth in yyyy-mm-dd format or leave the field blank: ")
-        birthday = datetime.strptime(birthday_str, '%Y-%m-%d') if birthday_str else None
-        record = Record(name, birthday)
-        record.add_phone(phone.value)
-        self.data[name] = record
-        return f"User {name} has been added to the contact list"
+    def add_record(self, record):
+        self.data[record.name.value] = record
 
     @input_error
-    def delete(self):
-        name = input("Enter the name of the user to be deleted: ")
-        if name in self.data:
-            del self.data[name]
-            return f"Contact {name} deleted"
-        else:
-            return f"Contact {name} does not exist"
-
-    @input_error
-    def edit_phone(self):
-        name = input("Enter the name whose number needs to be changed: ")
-        if name not in self.data:
-            return f"Contact {name} dont found"
-        old_phone = input("Enter your old phone number: ")
-        record = self.data[name]
-        if old_phone not in [phone.value for phone in record.phones]:
-            return f"This phone {old_phone} dont found"
-        new_phone = input("Enter a new phone number: ")
-        record.edit_phone(old_phone, new_phone)
-        return f"Phone number for {name} changed."
-
-    @input_error
-    def find(self):
-        name = input("Enter a name: ")
-        if name in self.data:
-            return self.data.get(name)
-        else:
-            return f"Contact {name} not found"
-
-    @input_error
-    def add_phone(self):
-        name = input("Enter the name of the person whose phone number you want to add: ")
-        if name not in self.data:
-            return f"Contact {name} dont found"
-        phone_str = input("Enter an additional phone number: ")
-        phone = Phone(phone_str)
-        record = self.data[name]
-        record.add_phone(phone.value)
-        return f"Added phone number {phone.value} to contact {name}."
-
-    @input_error
-    def birthday_change(self):
-        name = input("Enter the name of the person who needs the date of birth: ")
-        if name not in self.data:
-            return f"Contact {name} dont found"
-        birthday_str = input("Enter your date of birth in the format yyyy-mm-dd: ")
-        birthday = datetime.strptime(birthday_str, '%Y-%m-%d')
-        record = self.data[name]
-        record.birthday = birthday
-        return f"Added birthday to {name}"
-
-    @input_error
-    def days_to_birthday(self):
-        name = input("Enter the name of the contact: ")
+    def days_to_birthday(self, name):
         if name not in self.data:
             return f"Contact {name} not found"
         record = self.data[name]
@@ -186,24 +120,86 @@ class AddressBook(UserDict):
             return f"There are {days} days left until {name} birthday"
 
     @input_error
-    def days_to_birthday(self):
-        name = input("Enter the name of the contact: ")
+    def birthday_change(self, data):
+        name, birthday_str = data.split(maxsplit=1)
+        if name not in self.data:
+            return f"Contact {name} not found"
+        for fmt in ("%d-%m-%Y", "%d %m %Y", "%d/%m/%Y"):
+            try:
+                birthday = datetime.strptime(birthday_str, fmt)
+                break
+            except ValueError:
+                pass
+        else:
+            return f"Invalid date format for {name}"
+        record = self.data[name]
+        record.birthday = Birthday(birthday)
+        return f"Added birthday to {name}"
+
+    @input_error
+    def find(self, name):
         if name in self.data:
-            record = self.data[name]
-            return record.days_to_birthday()
+            return self.data.get(name)
+        else:
+            return f"Contact {name} not found"
+
+    @input_error
+    def delete(self, name):
+        if name in self.data:
+            del self.data[name]
+            return f"Contact {name} deleted"
+        else:
+            return f"Contact {name} does not exist"
+
+    @input_error
+    def edit_phone(self, data):
+        name, old_phone, new_phone = data.split()
+        record = self.find(name)
+        if record:
+            record.edit_phone(old_phone, new_phone)
+            return f"Phone number for {name} changed."
         else:
             return "The contact does not exist."
 
     @input_error
-    def search(self):
-        query = input("Enter what you remember about the contact: ")
-        if not query:
-            return "Error: Please enter at least some search information"
+    def add_phone(self, data):
+        name, phone_str = data.split()
+        if name not in self.data:
+            return f"Contact {name} dont found"
+        phone = Phone(phone_str)
+        record = self.data[name]
+        record.add_phone(phone.value)
+        return f"Added phone number {phone.value} to contact {name}."
+
+    @input_error
+    def search(self, query):
         result = []
         for name, record in self.data.items():
             if query in name or any(query in phone.value for phone in record.phones):
-                result.append(f"{name}: {', '.join(phone.value for phone in record.phones)}")
+                result.append((name, [phone.value for phone in record.phones]))
         return result
+
+    @input_error
+    def add_record_str(self, data):
+        data_parts = data.split(maxsplit=2)
+        name, phone = data_parts[:2]
+        if name in self.data:
+            return f"Contact {name} already exists"
+        record = Record(name)
+        record.add_phone(phone)
+        if len(data_parts) > 2:
+            birthday = data_parts[2]
+            for fmt in ("%d-%m-%Y", "%d %m %Y", "%d/%m/%Y"):
+                try:
+                    birthday_datetime = datetime.strptime(birthday, fmt)
+                    record.birthday = Birthday(birthday_datetime)
+                    break
+                except ValueError:
+                    pass
+            else:
+                return f"Contact {name} added, but the birthday was entered incorrectly and was not saved"
+        self.add_record(record)
+        return f"Contact {name} added"
 
     @input_error
     def iterator(self, n):
@@ -216,8 +212,7 @@ class AddressBook(UserDict):
             self.current_page += self.page_size
 
     @input_error
-    def start_iterator(self):
-        n = input("Enter how many contacts to show: ")
+    def start_iterator(self, n):
         self.iterator_instance = self.iterator(int(n))
         return next(self.iterator_instance, "No more records.")
 
@@ -260,52 +255,40 @@ def main(address_book):
         open(filename, 'a').close()
 
     ACTIONS = {
-        'add contact': address_book.add_record,
+        'add contact': address_book.add_record_str,
         'add phone': address_book.add_phone,
         'edit phone': address_book.edit_phone,
         'birthday change': address_book.birthday_change,
         'delete contact': address_book.delete,
-        'find phone': address_book.find,
+        'birthday': address_book.days_to_birthday,
+        'find': address_book.find,
         'search': address_book.search,
-        'days to birthday': address_book.days_to_birthday,
-        'show all': address_book.start_iterator,
-        'next page': address_book.next_page,
+        'show contacts': address_book.start_iterator,
+        'next': address_book.next_page,
+        'save': address_book.save_to_file,
         'exit': address_book.good_bye,
         'close': address_book.good_bye,
         '.': address_book.good_bye}
 
-    print_commands(ACTIONS)
-
+    def choice_action(data, ACTIONS):
+        for command in ACTIONS:
+            if data.startswith(command):
+                args = data[len(command):].strip()
+                return ACTIONS[command], args if args else None
+        return "Give me a correct command please.\nAvailable commands are: " + ', '.join(ACTIONS.keys()), None
 
     while True:
         data = input()
-        func, _ = choice_action(data, ACTIONS)
+        func, args = choice_action(data, ACTIONS)
         if isinstance(func, str):
             print(func)
             if func == "Good bye!":
                 break
         else:
-            result = func()
+            result = func(args) if args else func()
             print(result)
             if result == "Good bye!":
                 break
-
-
-def choice_action(data, ACTIONS):
-    command = data.strip()
-    if not command:
-        return "No command given", None
-    for action in ACTIONS:
-        if command.startswith(action):
-            return ACTIONS[action], None
-    return "Give me a correct command please", None
-
-
-
-def print_commands(ACTIONS):
-    print("Available commands:")
-    for command in ACTIONS.keys():
-        print(command)
 
 
 if __name__ == "__main__":
